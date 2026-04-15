@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Smart Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+    }
+
+    h1 {
+      padding: 20px;
+      color: #38bdf8;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .card {
+      background: #1e293b;
+      margin: 15px;
+      padding: 20px;
+      border-radius: 15px;
+      width: 250px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .value {
+      font-size: 28px;
+      margin-top: 10px;
+      color: #22c55e;
+    }
+
+    canvas {
+      background: white;
+      margin: 20px;
+      border-radius: 10px;
+      max-width: 90%;
+    }
+
+    .alert {
+      color: red;
+      font-size: 22px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🌐 ESP32 Smart Monitoring Dashboard</h1>
+
+<div class="container">
+  <div class="card">
+    <h2>🌡 Temperature</h2>
+    <div id="temp" class="value">--</div>
+  </div>
+
+  <div class="card">
+    <h2>💧 Humidity</h2>
+    <div id="hum" class="value">--</div>
+  </div>
+
+  <div class="card">
+    <h2>💨 Gas</h2>
+    <div id="gas" class="value">--</div>
+  </div>
+</div>
+
+<div id="alert"></div>
+
+<canvas id="chart"></canvas>
+
+<script>
+const channelID = "YOUR_CHANNEL_ID";
+const readAPI = "YOUR_READ_API_KEY";
+
+async function fetchData() {
+  const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPI}&results=20`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  let temps = [], hums = [], gases = [], labels = [];
+
+  data.feeds.forEach(feed => {
+    labels.push(feed.created_at);
+    temps.push(feed.field1);
+    hums.push(feed.field2);
+    gases.push(feed.field3);
+  });
+
+  // Latest values
+  document.getElementById("temp").innerText = temps.at(-1) + " °C";
+  document.getElementById("hum").innerText = hums.at(-1) + " %";
+  document.getElementById("gas").innerText = gases.at(-1);
+
+  // Alert
+  if (gases.at(-1) > 2000) {
+    document.getElementById("alert").innerHTML = "<p class='alert'>⚠ GAS ALERT!</p>";
+  } else {
+    document.getElementById("alert").innerHTML = "";
+  }
+
+  drawChart(labels, temps, hums, gases);
+}
+
+function drawChart(labels, t, h, g) {
+  new Chart(document.getElementById("chart"), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: "Temperature", data: t, borderWidth: 2 },
+        { label: "Humidity", data: h, borderWidth: 2 },
+        { label: "Gas", data: g, borderWidth: 2 }
+      ]
+    }
+  });
+}
+
+fetchData();
+setInterval(fetchData, 15000); // update every 15 sec
+</script>
+
+</body>
+</html>
