@@ -77,11 +77,15 @@
 
 <div id="alert"></div>
 
-<canvas id="chart"></canvas>
+<canvas id="tempChart"></canvas>
+<canvas id="humChart"></canvas>
+<canvas id="gasChart"></canvas>
 
 <script>
-const channelID = "3342972";
-const readAPI = "ZGGD6A2K24HMQ9QO";
+const channelID = "YOUR_CHANNEL_ID";
+const readAPI = "YOUR_READ_API_KEY";
+
+let tempChart, humChart, gasChart;
 
 async function fetchData() {
   const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPI}&results=20`;
@@ -91,43 +95,72 @@ async function fetchData() {
   let temps = [], hums = [], gases = [], labels = [];
 
   data.feeds.forEach(feed => {
-    labels.push(feed.created_at);
+    labels.push(new Date(feed.created_at).toLocaleTimeString());
     temps.push(feed.field1);
     hums.push(feed.field2);
     gases.push(feed.field3);
   });
 
-  // Latest values
+  // Update values
   document.getElementById("temp").innerText = temps.at(-1) + " °C";
   document.getElementById("hum").innerText = hums.at(-1) + " %";
   document.getElementById("gas").innerText = gases.at(-1);
 
   // Alert
   if (gases.at(-1) > 2000) {
-    document.getElementById("alert").innerHTML = "<p class='alert'>⚠ GAS ALERT!</p>";
+    document.getElementById("alert").innerHTML = "⚠ GAS ALERT!";
   } else {
     document.getElementById("alert").innerHTML = "";
   }
 
-  drawChart(labels, temps, hums, gases);
+  drawCharts(labels, temps, hums, gases);
 }
 
-function drawChart(labels, t, h, g) {
-  new Chart(document.getElementById("chart"), {
+function drawCharts(labels, t, h, g) {
+
+  if (tempChart) tempChart.destroy();
+  if (humChart) humChart.destroy();
+  if (gasChart) gasChart.destroy();
+
+  tempChart = new Chart(document.getElementById("tempChart"), {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [
-        { label: "Temperature", data: t, borderWidth: 2 },
-        { label: "Humidity", data: h, borderWidth: 2 },
-        { label: "Gas", data: g, borderWidth: 2 }
-      ]
+      datasets: [{
+        label: "Temperature (°C)",
+        data: t,
+        borderWidth: 2
+      }]
+    }
+  });
+
+  humChart = new Chart(document.getElementById("humChart"), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Humidity (%)",
+        data: h,
+        borderWidth: 2
+      }]
+    }
+  });
+
+  gasChart = new Chart(document.getElementById("gasChart"), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Gas Level",
+        data: g,
+        borderWidth: 2
+      }]
     }
   });
 }
 
 fetchData();
-setInterval(fetchData, 15000); // update every 15 sec
+setInterval(fetchData, 15000);
 </script>
 
 </body>
