@@ -39,11 +39,19 @@
       color: #22c55e;
     }
 
+    .chart {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 90%;
+    }
+
     canvas {
       background: white;
       margin: 20px;
       border-radius: 10px;
-      max-width: 90%;
+      max-width:50%;
+      max-height: 40%;
     }
 
     .alert {
@@ -76,11 +84,11 @@
 </div>
 
 <div id="alert"></div>
-
+<div class="chart">
 <canvas id="tempChart"></canvas>
 <canvas id="humChart"></canvas>
 <canvas id="gasChart"></canvas>
-
+</div>
 <script>
 const channelID = "3342972";
 const readAPI = "ZGGD6A2K24HMQ9QO";
