@@ -2,7 +2,15 @@
 <html>
 <head>
   <title>ESP32 Smart Dashboard</title>
+
+  <!-- Mobile Responsive -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Zoom Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
 
   <style>
     body {
@@ -32,26 +40,23 @@
       width: 250px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
-
+    .chart-container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
     .value {
       font-size: 28px;
       margin-top: 10px;
       color: #22c55e;
     }
 
-    .chart {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      max-width: 90%;
-    }
-
     canvas {
       background: white;
       margin: 20px;
       border-radius: 10px;
-      max-width:50%;
-      max-height: 40%;
+      width: 90%;
+      max-width: 900px;
     }
 
     .alert {
@@ -84,14 +89,19 @@
 </div>
 
 <div id="alert"></div>
-<div class="chart">
-<canvas id="tempChart"></canvas>
-<canvas id="humChart"></canvas>
-<canvas id="gasChart"></canvas>
+<div class="chart-container">
+  <canvas id="tempChart"></canvas>
 </div>
+<div class="chart-container">
+  <canvas id="humChart"></canvas>
+</div>
+<div class="chart-container">
+  <canvas id="gasChart"></canvas>
+</div>
+
 <script>
-const channelID = "3342972";
-const readAPI = "ZGGD6A2K24HMQ9QO";
+const channelID = "3343839";
+const readAPI = "8ZEZIGX8JWW09LIS";
 
 let tempChart, humChart, gasChart;
 
@@ -103,20 +113,18 @@ async function fetchData() {
   let temps = [], hums = [], gases = [], labels = [];
 
   data.feeds.forEach(feed => {
-    labels.push(new Date(feed.created_at).toLocaleTimeString());
-    temps.push(feed.field1);
-    hums.push(feed.field2);
-    gases.push(feed.field3);
+    labels.push(new Date(feed.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+    temps.push(parseFloat(feed.field1) || 0);
+    hums.push(parseFloat(feed.field2) || 0);
+    gases.push(parseFloat(feed.field3) || 0);
   });
 
-  // Update values
   document.getElementById("temp").innerText = temps.at(-1) + " °C";
   document.getElementById("hum").innerText = hums.at(-1) + " %";
   document.getElementById("gas").innerText = gases.at(-1);
 
-  // Alert
   if (gases.at(-1) > 2000) {
-    document.getElementById("alert").innerHTML = "⚠ GAS ALERT!";
+    document.getElementById("alert").innerHTML = "<p class='alert'>⚠ GAS ALERT!</p>";
   } else {
     document.getElementById("alert").innerHTML = "";
   }
@@ -130,6 +138,7 @@ function drawCharts(labels, t, h, g) {
   if (humChart) humChart.destroy();
   if (gasChart) gasChart.destroy();
 
+  // 🌡 Temperature
   tempChart = new Chart(document.getElementById("tempChart"), {
     type: 'line',
     data: {
@@ -137,11 +146,28 @@ function drawCharts(labels, t, h, g) {
       datasets: [{
         label: "Temperature (°C)",
         data: t,
-        borderWidth: 2
+        borderColor: "red",
+        backgroundColor: "rgba(255,0,0,0.2)",
+        fill: true,
+        tension: 0.4
       }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        zoom: {
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+          pan: { enabled: true, mode: 'x' }
+        }
+      },
+      scales: {
+        y: { min: 0, max: 100 }
+      }
     }
   });
 
+  // 💧 Humidity
   humChart = new Chart(document.getElementById("humChart"), {
     type: 'line',
     data: {
@@ -149,11 +175,28 @@ function drawCharts(labels, t, h, g) {
       datasets: [{
         label: "Humidity (%)",
         data: h,
-        borderWidth: 2
+        borderColor: "blue",
+        backgroundColor: "rgba(0,0,255,0.2)",
+        fill: true,
+        tension: 0.4
       }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        zoom: {
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+          pan: { enabled: true, mode: 'x' }
+        }
+      },
+      scales: {
+        y: { min: 0, max: 100 }
+      }
     }
   });
 
+  // 💨 Gas
   gasChart = new Chart(document.getElementById("gasChart"), {
     type: 'line',
     data: {
@@ -161,8 +204,21 @@ function drawCharts(labels, t, h, g) {
       datasets: [{
         label: "Gas Level",
         data: g,
-        borderWidth: 2
+        borderColor: "green",
+        backgroundColor: "rgba(0,255,0,0.2)",
+        fill: true,
+        tension: 0.4
       }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        zoom: {
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+          pan: { enabled: true, mode: 'x' }
+        }
+      }
     }
   });
 }
